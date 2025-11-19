@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Import Wireframes SVG</title>
+    <style>
+      body { font-family: Inter, -apple-system, system-ui, sans-serif; margin: 16px; }
+      .drop { border: 2px dashed #dfe7e3; border-radius: 8px; padding: 20px; text-align:center; color:#666 }
+      input[type=file] { display:block; margin:12px auto }
+      button { margin-top:12px; padding:8px 12px; border-radius:8px }
+      .list{ margin-top:12px; max-height:200px; overflow:auto; }
+      .item{ padding:6px 8px; border-bottom:1px solid #eee }
+    </style>
+  </head>
+  <body>
+    <h3>Importa Wireframes SVG</h3>
+    <div class="drop" id="drop">Trascina qui oppure scegli file SVG multipli</div>
+    <input id="fileInput" type="file" accept=".svg" multiple />
+    <div class="list" id="list"></div>
+    <div style="display:flex; gap:8px; justify-content:center; margin-top:12px">
+      <button id="importBtn">Importa in Figma</button>
+      <button id="closeBtn">Chiudi</button>
+    </div>
+
+    <!-- Local JSZip (bundled). If missing, run scripts/bundle_figma_plugin.ps1 to download it. -->
+    <script src="./libs/jszip.min.js"></script>
+    <script>
+      const drop = document.getElementById('drop');
+      const fileInput = document.getElementById('fileInput');
+      const list = document.getElementById('list');
+      const importBtn = document.getElementById('importBtn');
+      const closeBtn = document.getElementById('closeBtn');
+
+      let files = [];
+
+      function addFile(file, content) {
+        files.push({ name: file.name, content });
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.textContent = file.name;
+        list.appendChild(div);
+      }
+
+      drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.style.borderColor='#9cc6b7' });
+      drop.addEventListener('dragleave', ()=>{ drop.style.borderColor='#dfe7e3' });
+      drop.addEventListener('drop', (e)=>{
+        e.preventDefault(); drop.style.borderColor='#dfe7e3';
+        const dt = e.dataTransfer;
+        if (dt && dt.files) handleFiles(dt.files);
+      });
+
+      fileInput.addEventListener('change', (e)=>{ handleFiles(e.target.files); });
+
+      async function handleFiles(listFiles){
+        for (let i=0;i<listFiles.length;i++){
+          const f = listFiles[i];
+          const name = f.name.toLowerCase();
+          if (name.endsWith('.svg')) {
+            const reader = new FileReader();
+            reader.onload = (ev)=>{ addFile(f, ev.target.result); };
+            reader.readAsText(f);
+            continue;
+          }
+          // support zip files: extract svg entries
+          if (name.endsWith('.zip')) {
+            try {
+              const arrayBuffer = await f.arrayBuffer();
+              const zip = await JSZip.loadAsync(arrayBuffer);
+              const entries = Object.keys(zip.files);
+              for (const entryName of entries) {
+                if (entryName.toLowerCase().endsWith('.svg')) {
+                  const entry = zip.files[entryName];
+                  const content = await entry.async('text');
+                  // create a pseudo File-like object for naming
+                  addFile({ name: entryName }, content);
+                }
+              }
+            } catch (err) {
+              const div = document.createElement('div');
+              div.className = 'item';
+              div.textContent = `Errore leggendo ZIP: ${f.name}`;
+              list.appendChild(div);
+            }
+            continue;
+          }
+          // ignore others
+        }
+      }
+
+      importBtn.onclick = ()=>{
+        if (files.length === 0) { parent.postMessage({ pluginMessage: { type: 'notify', message: 'Nessun file selezionato' } }, '*'); return; }
+        // send svg contents to plugin
+        parent.postMessage({ pluginMessage: { type: 'import-svgs', svgs: files } }, '*');
+      };
+
+      closeBtn.onclick = ()=>{ parent.postMessage({ pluginMessage: { type: 'close' } }, '*'); };
+
+      // receive messages from plugin
+      onmessage = (e) => {
+        const msg = e.data.pluginMessage;
+        if (msg && msg.type === 'import-done') {
+          const created = msg.created || [];
+          list.innerHTML = '';
+          const p = document.createElement('div');
+          p.className = 'item';
+          p.textContent = `Importati ${created.length} frame`; 
+          list.appendChild(p);
+        }
+      };
+    </script>
+  </body>
+</html>

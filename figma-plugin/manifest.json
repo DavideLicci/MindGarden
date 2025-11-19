@@ -1,0 +1,11 @@
+{
+  "name": "Import Wireframes SVG",
+  "id": "import-wireframes-svg",
+  "version": "0.1.0",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "description": "Importa rapidamente wireframe SVG (o ZIP di SVG) in Figma come frame. Supporta import offline grazie al bundling JSZip.",
+  "author": "MindGarden Team"
+}

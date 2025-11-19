@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <rect width="100%" height="100%" fill="#fff"/>
+  <text x="40" y="60" font-size="28" fill="#333">MindGarden — Garden View</text>
+
+  <!-- Top HUD -->
+  <rect x="40" y="80" width="1520" height="60" rx="10" fill="#f6f8f6"/>
+  <text x="60" y="120" font-size="18" fill="#444">Oggi: 3 piante — Garden Keeper: "Hai coltivato calma"</text>
+
+  <!-- Large garden canvas (placeholder) -->
+  <rect x="60" y="170" width="1480" height="640" rx="16" fill="#eef6ee" stroke="#e0e8df"/>
+  <!-- sample plants as circles/rects -->
+  <g transform="translate(180,260)">
+    <ellipse cx="120" cy="220" rx="80" ry="120" fill="#9dd39a"/>
+    <rect x="340" y="180" width="120" height="160" rx="20" fill="#c8e6d0"/>
+    <path d="M620 320 q40 -120 120 -120 q80 0 120 120" fill="#ffd9d9"/>
+  </g>
+
+  <!-- Tap a plant hint -->
+  <text x="120" y="920" font-size="16" fill="#666">Tocca una pianta per dettagli e azioni (innaffia, medita)</text>
+
+  <!-- Right-side small panel for selected plant -->
+  <rect x="1230" y="200" width="300" height="300" rx="12" fill="#fff" stroke="#eee"/>
+  <text x="1250" y="240" font-size="18" fill="#333">Pianta selezionata</text>
+  <text x="1250" y="280" font-size="14" fill="#666">Archetype: Serenità</text>
+  <text x="1250" y="310" font-size="14" fill="#666">Health: 0.8</text>
+  <rect x="1250" y="340" width="260" height="44" rx="10" fill="#9cc6b7"/>
+  <text x="1380" y="372" font-size="16" fill="#fff" text-anchor="middle">Innaffia</text>
+
+  <!-- Bottom timeline quick access -->
+  <rect x="60" y="830" width="1480" height="100" rx="12" fill="#fafafa" stroke="#eee"/>
+  <text x="120" y="885" font-size="16" fill="#666">Timeline settimanale — scorri per vedere evoluzione</text>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1600" viewBox="0 0 1080 1600">
+  <rect width="100%" height="100%" fill="#fff"/>
+  <text x="40" y="60" font-size="28" fill="#333">MindGarden — Garden Keeper (AI Coach)</text>
+
+  <!-- Coach card -->
+  <rect x="60" y="120" width="960" height="320" rx="18" fill="#f4fbf7" stroke="#e6f1ea"/>
+  <text x="120" y="200" font-size="20" fill="#333">Ciao — ho notato più elementi di tristezza negli ultimi 3 giorni.</text>
+  <text x="120" y="240" font-size="16" fill="#666">Potrebbe aiutare una breve attività: 3 respiri guidati (1 min).</text>
+
+  <!-- Quick actions -->
+  <g transform="translate(120,300)">
+    <rect x="0" y="0" width="240" height="60" rx="12" fill="#9cc6b7"/>
+    <text x="120" y="40" font-size="16" fill="#fff" text-anchor="middle">Respira 1 min</text>
+    <rect x="280" y="0" width="240" height="60" rx="12" fill="#ffd9d9"/>
+    <text x="400" y="40" font-size="16" fill="#a33" text-anchor="middle">Journaling</text>
+    <rect x="560" y="0" width="240" height="60" rx="12" fill="#fff" stroke="#ddd"/>
+    <text x="680" y="40" font-size="16" fill="#666" text-anchor="middle">Salta</text>
+  </g>
+
+  <!-- Long form coach dialog -->
+  <rect x="60" y="460" width="960" height="740" rx="12" fill="#fff" stroke="#eee"/>
+  <text x="120" y="520" font-size="16" fill="#444">Esempio di conversazione (non terapeutica):</text>
+  <text x="120" y="560" font-size="14" fill="#666">- Garden Keeper: "Hai fatto 3 check-in di ansia; vuoi provare un esercizio di grounding?"</text>
+  <text x="120" y="600" font-size="14" fill="#666">- Utente: "Sì"</text>
+  <text x="120" y="640" font-size="14" fill="#666">- Garden Keeper: "Ecco un esercizio di 2 minuti..."</text>
+
+  <!-- Footer -->
+  <rect x="0" y="1500" width="1080" height="100" fill="#fafafa" stroke="#eee"/>
+  <text x="540" y="1560" font-size="16" fill="#666" text-anchor="middle">Suggerimenti basati su trend — non diagnostici</text>
+</svg>

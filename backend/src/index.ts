@@ -3,13 +3,18 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 
+import authRouter from './routes/auth';
 import checkinsRouter from './routes/checkins';
 import gardensRouter from './routes/gardens';
+import { initializeDatabase } from './db';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+
+// Initialize database
+initializeDatabase();
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
@@ -22,6 +27,7 @@ app.get('/openapi.yaml', (_req, res) => {
   res.sendFile(specPath);
 });
 
+app.use('/auth', authRouter);
 app.use('/checkins', checkinsRouter);
 app.use('/gardens', gardensRouter);
 

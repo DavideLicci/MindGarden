@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  isRegister?: boolean;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ isRegister = false }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +31,7 @@ const LoginForm: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to MindGarden
+            {isRegister ? 'Create your MindGarden account' : 'Sign in to MindGarden'}
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

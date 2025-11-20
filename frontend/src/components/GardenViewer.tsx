@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useEffect, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
-import * as THREE from 'three';
+import { useAuth } from '../hooks/useAuth';
 import { apiService, Garden, PlantInstance } from '../services/api';
 
 interface PlantProps {
@@ -9,102 +9,125 @@ interface PlantProps {
 }
 
 const Plant: React.FC<PlantProps> = ({ plant }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  // Simple plant representation - in a real app, you'd have different models based on archetype
-  const color = plant.health > 0.7 ? '#4ade80' : plant.health > 0.4 ? '#fbbf24' : '#ef4444';
-  const scale = plant.growthProgress || 1;
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      // Gentle swaying animation
-      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime + plant.position.x) * 0.1;
+  const getPlantColor = (archetype: string) => {
+    switch (archetype.toLowerCase()) {
+      case 'joy': return '#FFD700';
+      case 'sadness': return '#4169E1';
+      case 'anger': return '#DC143C';
+      case 'fear': return '#800080';
+      case 'surprise': return '#FFA500';
+      case 'disgust': return '#228B22';
+      default: return '#8B4513';
     }
-  });
+  };
+
+  const getPlantHeight = (health: number, growthProgress: number) => {
+    return (health / 100) * (growthProgress / 100) * 2 + 0.5;
+  };
 
   return (
-    <mesh
-      ref={meshRef}
-      position={[plant.position.x, plant.position.y, plant.position.z]}
-      scale={[scale, scale, scale]}
-    >
-      <cylinderGeometry args={[0.1, 0.2, 1, 8]} />
-      <meshStandardMaterial color={color} />
+    <group position={[plant.position.x, 0, plant.position.z]}>
+      {/* Stem */}
+      <mesh position={[0, getPlantHeight(plant.health, plant.growthProgress) / 2, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, getPlantHeight(plant.health, plant.growthProgress)]} />
+        <meshStandardMaterial color="#228B22" />
+      </mesh>
+
+      {/* Leaves/Flowers */}
+      <mesh position={[0, getPlantHeight(plant.health, plant.growthProgress), 0]}>
+        <sphereGeometry args={[0.2]} />
+        <meshStandardMaterial color={getPlantColor(plant.archetype)} />
+      </mesh>
+
+      {/* Plant label */}
       <Text
-        position={[0, 0.8, 0]}
-        fontSize={0.2}
+        position={[0, getPlantHeight(plant.health, plant.growthProgress) + 0.5, 0]}
+        fontSize={0.1}
         color="black"
         anchorX="center"
         anchorY="middle"
       >
         {plant.archetype}
       </Text>
-    </mesh>
-  );
-};
-
-const GardenScene: React.FC<{ plants: PlantInstance[] }> = ({ plants }) => {
-  return (
-    <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
-
-      {/* Ground plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-        <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#8b5a3c" />
-      </mesh>
-
-      {/* Render plants */}
-      {plants.map((plant) => (
-        <Plant key={plant.id} plant={plant} />
-      ))}
-    </>
+    </group>
   );
 };
 
 const GardenViewer: React.FC = () => {
+  const { user } = useAuth();
   const [garden, setGarden] = useState<Garden | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchGarden = async () => {
+      if (!user) return;
+
       try {
         const gardenData = await apiService.getGarden();
         setGarden(gardenData);
-      } catch (err: any) {
-        setError(err.response?.data?.error?.message || 'Failed to load garden');
+      } catch (err) {
+        setError('Failed to load garden');
+        console.error('Garden fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchGarden();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading your garden...</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading your garden...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-red-600">{error}</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-600 text-xl">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-96 border rounded-lg overflow-hidden">
-      <Canvas camera={{ position: [5, 5, 5], fov: 75 }}>
-        <GardenScene plants={garden?.plants || []} />
-      </Canvas>
+    <div className="w-full h-screen">
+      <div className="mb-4 p-4 bg-white rounded-lg shadow">
+        <h1 className="text-2xl font-bold text-gray-900">Your Mind Garden</h1>
+        <p className="text-gray-600">
+          {garden?.plants.length || 0} plants growing from your emotional journey
+        </p>
+      </div>
+
+      <div className="w-full" style={{ height: 'calc(100vh - 120px)' }}>
+        <Canvas camera={{ position: [0, 5, 10], fov: 60 }}>
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+
+          {/* Ground */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+            <planeGeometry args={[20, 20]} />
+            <meshStandardMaterial color="#90EE90" />
+          </mesh>
+
+          {/* Plants */}
+          {garden?.plants.map((plant) => (
+            <Plant key={plant.id} plant={plant} />
+          ))}
+
+          {/* Controls */}
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            minDistance={3}
+            maxDistance={20}
+          />
+        </Canvas>
+      </div>
     </div>
   );
 };

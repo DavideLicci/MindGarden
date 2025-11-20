@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios from 'axios';
 
 // Types based on OpenAPI spec
 export interface User {
@@ -55,8 +55,8 @@ export interface Garden {
 }
 
 class ApiService {
-  private api: axios.AxiosInstance;
-  private baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3001/v1';
+  private api: any;
+  private baseURL = 'http://localhost:3001/v1';
 
   constructor() {
     this.api = axios.create({
@@ -67,7 +67,7 @@ class ApiService {
     });
 
     // Add request interceptor to include auth token
-    this.api.interceptors.request.use((config) => {
+    this.api.interceptors.request.use((config: any) => {
       const token = localStorage.getItem('accessToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -77,8 +77,8 @@ class ApiService {
 
     // Add response interceptor to handle token refresh
     this.api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
+      (response: any) => response,
+      async (error: any) => {
         if (error.response?.status === 401) {
           // Try to refresh token
           const refreshToken = localStorage.getItem('refreshToken');
@@ -87,7 +87,7 @@ class ApiService {
               const refreshResponse = await axios.post(`${this.baseURL}/auth/refresh`, {
                 refreshToken,
               });
-              const newTokens = refreshResponse.data;
+              const newTokens: any = refreshResponse.data;
               localStorage.setItem('accessToken', newTokens.access);
               localStorage.setItem('refreshToken', newTokens.refresh);
 
@@ -108,7 +108,7 @@ class ApiService {
 
   // Auth methods
   async register(email: string, password: string): Promise<AuthResponse> {
-    const response: AxiosResponse<AuthResponse> = await this.api.post('/auth/register', {
+    const response = await this.api.post('/auth/register', {
       email,
       password,
     });
@@ -116,7 +116,7 @@ class ApiService {
   }
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response: AxiosResponse<AuthResponse> = await this.api.post('/auth/login', {
+    const response = await this.api.post('/auth/login', {
       email,
       password,
     });

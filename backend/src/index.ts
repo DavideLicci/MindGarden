@@ -6,6 +6,11 @@ import path from 'path';
 import authRouter from './routes/auth';
 import checkinsRouter from './routes/checkins';
 import gardensRouter from './routes/gardens';
+import plantsRouter from './routes/plants';
+import uploadsRouter from './routes/uploads';
+import exportRouter from './routes/export';
+import insightsRouter from './routes/insights';
+import settingsRouter from './routes/settings';
 import { initializeDatabase } from './db';
 
 dotenv.config();

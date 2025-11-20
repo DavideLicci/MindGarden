@@ -1,5 +1,6 @@
 import * as sqlite3 from 'sqlite3';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 const DB_PATH = path.join(__dirname, '..', 'mindgarden.db');
 
@@ -24,7 +25,7 @@ export function initializeDatabase() {
 
     db.run(`
       CREATE TABLE IF NOT EXISTS gardens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
         user_id INTEGER NOT NULL,
         health REAL DEFAULT 0.5,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -115,11 +116,12 @@ export const dbStatements = {
   },
 
   // Gardens
-  createGarden: (userId: number): Promise<number> => {
+  createGarden: (userId: number): Promise<string> => {
     return new Promise((resolve, reject) => {
-      db.run('INSERT INTO gardens (user_id) VALUES (?)', [userId], function(err) {
+      const id = uuidv4();
+      db.run('INSERT INTO gardens (id, user_id) VALUES (?, ?)', [id, userId], function(err) {
         if (err) reject(err);
-        else resolve(this.lastID);
+        else resolve(id);
       });
     });
   },
@@ -174,7 +176,7 @@ export const dbStatements = {
     return new Promise((resolve, reject) => {
       db.all('SELECT * FROM checkins WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit], (err, rows) => {
         if (err) reject(err);
-        else resolve(rows.map(row => ({ ...row, tags: JSON.parse(row.tags || '[]') })));
+        else resolve((rows as any[]).map((row: any) => ({ ...row, tags: JSON.parse(row.tags || '[]') })));
       });
     });
   },

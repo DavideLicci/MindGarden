@@ -36,9 +36,56 @@ export function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS checkins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        mood TEXT NOT NULL,
         text TEXT,
+        stt_text TEXT,
+        audio_object_key TEXT,
+        emotion_label TEXT,
+        sentiment_score REAL,
+        intensity REAL,
+        tags TEXT,
+        embeddings_id TEXT,
+        status TEXT DEFAULT 'complete',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS plants (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        checkin_id INTEGER,
+        archetype TEXT,
+        params TEXT,
+        position TEXT,
+        style_skin TEXT,
+        health REAL DEFAULT 0.5,
+        growth_progress REAL DEFAULT 0.0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (checkin_id) REFERENCES checkins(id) ON DELETE SET NULL
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS insights (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        insight_type TEXT,
+        source_checkins TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        user_id INTEGER PRIMARY KEY,
+        processing_mode TEXT DEFAULT 'cloud',
+        audio_retention_days INTEGER DEFAULT 30,
+        share_anonymized BOOLEAN DEFAULT 0,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
@@ -60,7 +107,7 @@ export const dbStatements = {
   },
   getUserByEmail: (email: string): Promise<any> => {
     return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+      db.get('SELECT * FROM users WHERE email = ?', [email], (err, row: any) => {
         if (err) reject(err);
         else resolve(row);
       });
@@ -78,7 +125,7 @@ export const dbStatements = {
   },
   getGardenByUserId: (userId: number): Promise<any> => {
     return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM gardens WHERE user_id = ?', [userId], (err, row) => {
+      db.get('SELECT * FROM gardens WHERE user_id = ?', [userId], (err, row: any) => {
         if (err) reject(err);
         else resolve(row);
       });
@@ -94,9 +141,13 @@ export const dbStatements = {
   },
 
   // Checkins
-  createCheckin: (userId: number, mood: string, text: string | null): Promise<number> => {
+  createCheckin: (userId: number, data: any): Promise<number> => {
     return new Promise((resolve, reject) => {
-      db.run('INSERT INTO checkins (user_id, mood, text) VALUES (?, ?, ?)', [userId, mood, text], function(err) {
+      const { text, sttText, audioObjectKey, emotionLabel, sentimentScore, intensity, tags } = data;
+      db.run(`
+        INSERT INTO checkins (user_id, text, stt_text, audio_object_key, emotion_label, sentiment_score, intensity, tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [userId, text, sttText, audioObjectKey, emotionLabel, sentimentScore, intensity, JSON.stringify(tags || [])], function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
       });
@@ -106,7 +157,16 @@ export const dbStatements = {
     return new Promise((resolve, reject) => {
       db.all('SELECT * FROM checkins WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, rows) => {
         if (err) reject(err);
-        else resolve(rows);
+        else resolve((rows as any[]).map(row => ({ ...(row as any), tags: JSON.parse((row as any).tags || '[]') })));
+      });
+    });
+  },
+  getCheckinById: (id: number): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM checkins WHERE id = ?', [id], (err, row) => {
+        if (err) reject(err);
+        else if (row) resolve({ ...(row as any), tags: JSON.parse((row as any).tags || '[]') });
+        else resolve(null);
       });
     });
   },
@@ -114,7 +174,98 @@ export const dbStatements = {
     return new Promise((resolve, reject) => {
       db.all('SELECT * FROM checkins WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit], (err, rows) => {
         if (err) reject(err);
-        else resolve(rows);
+        else resolve(rows.map(row => ({ ...row, tags: JSON.parse(row.tags || '[]') })));
+      });
+    });
+  },
+
+  // Plants
+  createPlant: (data: any): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const { id, userId, checkinId, archetype, params, position, styleSkin, health, growthProgress } = data;
+      db.run(`
+        INSERT INTO plants (id, user_id, checkin_id, archetype, params, position, style_skin, health, growth_progress)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [id, userId, checkinId, archetype, JSON.stringify(params || {}), JSON.stringify(position || {}), styleSkin, health, growthProgress], function(err) {
+        if (err) reject(err);
+        else resolve(id);
+      });
+    });
+  },
+  getPlantsByUserId: (userId: number): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      db.all('SELECT * FROM plants WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, rows: any[]) => {
+        if (err) reject(err);
+        else resolve(rows.map(row => ({
+          ...row,
+          params: JSON.parse(row.params || '{}'),
+          position: JSON.parse(row.position || '{}')
+        })));
+      });
+    });
+  },
+  getPlantById: (id: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM plants WHERE id = ?', [id], (err, row: any) => {
+        if (err) reject(err);
+        else if (row) resolve({
+          ...row,
+          params: JSON.parse(row.params || '{}'),
+          position: JSON.parse(row.position || '{}')
+        });
+        else resolve(null);
+      });
+    });
+  },
+  updatePlantHealth: (id: string, health: number, growthProgress: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      db.run('UPDATE plants SET health = ?, growth_progress = ? WHERE id = ?', [health, growthProgress, id], function(err) {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  },
+
+  // Insights
+  createInsight: (data: any): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const { id, userId, text, insightType, sourceCheckins } = data;
+      db.run(`
+        INSERT INTO insights (id, user_id, text, insight_type, source_checkins)
+        VALUES (?, ?, ?, ?, ?)
+      `, [id, userId, text, insightType, JSON.stringify(sourceCheckins || [])], function(err) {
+        if (err) reject(err);
+        else resolve(id);
+      });
+    });
+  },
+  getInsightsByUserId: (userId: number, limit: number): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      db.all('SELECT * FROM insights WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit], (err, rows: any[]) => {
+        if (err) reject(err);
+        else resolve(rows.map(row => ({ ...row, sourceCheckins: JSON.parse(row.source_checkins || '[]') })));
+      });
+    });
+  },
+
+  // Settings
+  getSettingsByUserId: (userId: number): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM settings WHERE user_id = ?', [userId], (err, row: any) => {
+        if (err) reject(err);
+        else resolve(row || { userId, processingMode: 'cloud', audioRetentionDays: 30, shareAnonymized: false });
+      });
+    });
+  },
+  updateSettings: (userId: number, data: any): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const { processingMode, audioRetentionDays, shareAnonymized } = data;
+      db.run(`
+        INSERT OR REPLACE INTO settings (user_id, processing_mode, audio_retention_days, share_anonymized)
+        VALUES (?, ?, ?, ?)
+      `, [userId, processingMode, audioRetentionDays, shareAnonymized], function(err) {
+        if (err) reject(err);
+        else resolve();
       });
     });
   },

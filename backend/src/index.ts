@@ -35,6 +35,12 @@ app.get('/openapi.yaml', (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/checkins', checkinsRouter);
 app.use('/gardens', gardensRouter);
+app.use('/plants', plantsRouter);
+app.use('/uploads', uploadsRouter);
+app.use('/export', exportRouter);
+app.use('/insights', insightsRouter);
+app.use('/settings', settingsRouter);
+app.use('/analytics', analyticsRouter);
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console

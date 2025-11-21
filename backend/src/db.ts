@@ -7,6 +7,7 @@ const DB_PATH = path.join(__dirname, '..', 'mindgarden.db');
 let db: sqlite3.Database;
 
 export function initializeDatabase() {
+  console.log('Initializing database at:', DB_PATH);
   db = new sqlite3.Database(DB_PATH);
 
   // Enable foreign keys

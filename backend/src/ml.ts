@@ -1,4 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Placeholder ML functions for MindGarden
 // These will be replaced with actual ML models in production
@@ -19,6 +25,17 @@ export interface InsightGeneration {
 export interface EmbeddingResult {
   id: string;
   vector: number[];
+}
+
+export interface PlantGenerationParams {
+  archetype: string;
+  params: {
+    color: string;
+    size: number;
+    shape: string;
+    growthRate: number;
+  };
+  position: { x: number; y: number; z: number };
 }
 
 // Simple keyword-based emotion analysis
@@ -82,36 +99,168 @@ export function generateEmbeddings(text: string): Promise<EmbeddingResult> {
   });
 }
 
-// Generate insights based on recent checkins
-export function generateInsights(checkins: any[], userId: string): InsightGeneration[] {
+// Generate plant based on emotion analysis
+export function generatePlantFromEmotion(emotionAnalysis: EmotionAnalysis, existingPlants: any[]): PlantGenerationParams {
+  const { emotionLabel, sentimentScore, intensity } = emotionAnalysis;
+
+  // Plant archetypes based on emotions
+  const plantArchetypes = {
+    joy: { color: '#FFD700', shape: 'flower', growthRate: 1.2 },
+    sadness: { color: '#4169E1', shape: 'drooping', growthRate: 0.8 },
+    anger: { color: '#DC143C', shape: 'spiky', growthRate: 1.0 },
+    fear: { color: '#800080', shape: 'curled', growthRate: 0.7 },
+    surprise: { color: '#FFA500', shape: 'star', growthRate: 1.1 },
+    disgust: { color: '#228B22', shape: 'thorny', growthRate: 0.9 },
+    anxiety: { color: '#FF6347', shape: 'wavy', growthRate: 0.8 },
+    excitement: { color: '#FF1493', shape: 'burst', growthRate: 1.3 },
+    gratitude: { color: '#98FB98', shape: 'blooming', growthRate: 1.1 },
+    love: { color: '#FF69B4', shape: 'heart', growthRate: 1.2 },
+    confusion: { color: '#D3D3D3', shape: 'twisted', growthRate: 0.9 },
+    calm: { color: '#87CEEB', shape: 'straight', growthRate: 1.0 },
+    neutral: { color: '#8B4513', shape: 'basic', growthRate: 1.0 }
+  };
+
+  const archetype = plantArchetypes[emotionLabel as keyof typeof plantArchetypes] || plantArchetypes.neutral;
+
+  // Calculate size based on intensity and sentiment
+  const baseSize = 0.5 + intensity * 0.5;
+  const sentimentModifier = sentimentScore > 0 ? 1.2 : sentimentScore < 0 ? 0.8 : 1.0;
+  const size = baseSize * sentimentModifier;
+
+  // Generate position avoiding existing plants
+  const position = generatePlantPosition(existingPlants);
+
+  return {
+    archetype: emotionLabel,
+    params: {
+      color: archetype.color,
+      size,
+      shape: archetype.shape,
+      growthRate: archetype.growthRate
+    },
+    position
+  };
+}
+
+// Generate non-overlapping plant position
+function generatePlantPosition(existingPlants: any[]): { x: number; y: number; z: number } {
+  const minDistance = 2;
+  let attempts = 0;
+  let position: { x: number; y: number; z: number };
+
+  do {
+    position = {
+      x: (Math.random() - 0.5) * 16, // -8 to 8
+      y: 0,
+      z: (Math.random() - 0.5) * 16  // -8 to 8
+    };
+    attempts++;
+  } while (attempts < 50 && existingPlants.some(plant =>
+    Math.sqrt(
+      Math.pow(plant.position.x - position.x, 2) +
+      Math.pow(plant.position.z - position.z, 2)
+    ) < minDistance
+  ));
+
+  return position;
+}
+
+// Generate personalized insights using OpenAI
+export async function generateInsights(checkins: any[], userId: string): Promise<InsightGeneration[]> {
   const insights: InsightGeneration[] = [];
 
   if (checkins.length === 0) return insights;
 
-  // Insight 1: Trend analysis
+  try {
+    // Prepare checkin data for analysis
+    const recentCheckins = checkins.slice(0, 20);
+    const checkinSummary = recentCheckins.map(c => ({
+      date: c.created_at,
+      emotion: c.emotionLabel,
+      sentiment: c.sentimentScore,
+      text: c.text?.substring(0, 100) + (c.text?.length > 100 ? '...' : '')
+    }));
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `Analyze the user's emotional checkins and generate 2-3 personalized insights. Each insight should be:
+          - Helpful and empathetic
+          - Based on patterns in their emotional data
+          - Encouraging positive growth
+          - Return as JSON array with objects containing: text, insightType, sourceCheckins (array of checkin IDs)
+
+          Insight types: trend_analysis, pattern_recognition, encouragement, milestone, recommendation`
+        },
+        {
+          role: 'user',
+          content: `User's recent checkins: ${JSON.stringify(checkinSummary)}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500
+    });
+
+    const result = response.choices[0]?.message?.content;
+    if (result) {
+      try {
+        const parsedInsights = JSON.parse(result);
+        parsedInsights.forEach((insight: any) => {
+          insights.push({
+            id: uuidv4(),
+            text: insight.text,
+            insightType: insight.insightType,
+            sourceCheckins: insight.sourceCheckins || recentCheckins.map(c => c.id.toString())
+          });
+        });
+      } catch (parseError) {
+        console.error('Failed to parse OpenAI insights:', parseError);
+      }
+    }
+  } catch (error) {
+    console.error('OpenAI insights generation failed:', error);
+  }
+
+  // Fallback to rule-based insights if OpenAI fails
+  if (insights.length === 0) {
+    return generateInsightsFallback(checkins, userId);
+  }
+
+  return insights;
+}
+
+// Fallback rule-based insights
+function generateInsightsFallback(checkins: any[], userId: string): InsightGeneration[] {
+  const insights: InsightGeneration[] = [];
+
+  if (checkins.length === 0) return insights;
+
+  // Trend analysis
   const recentCheckins = checkins.slice(0, 10);
   const avgSentiment = recentCheckins.reduce((sum, c) => sum + (c.sentimentScore || 0), 0) / recentCheckins.length;
 
   if (avgSentiment > 0.2) {
     insights.push({
       id: uuidv4(),
-      text: 'Negli ultimi giorni hai mostrato un umore generalmente positivo. Continua così!',
+      text: 'Your emotional garden is blooming! Keep nurturing those positive feelings.',
       insightType: 'trend_positive',
       sourceCheckins: recentCheckins.map(c => c.id.toString())
     });
   } else if (avgSentiment < -0.2) {
     insights.push({
       id: uuidv4(),
-      text: 'Negli ultimi giorni hai espresso sentimenti negativi. Considera di prenderti del tempo per te stesso.',
+      text: 'Your garden shows some wilting. Consider activities that bring you peace and joy.',
       insightType: 'trend_negative',
       sourceCheckins: recentCheckins.map(c => c.id.toString())
     });
   }
 
-  // Insight 2: Pattern recognition
+  // Pattern recognition
   const emotionCounts: { [key: string]: number } = {};
   recentCheckins.forEach(checkin => {
-    const emotion = checkin.emotionLabel || 'neutrale';
+    const emotion = checkin.emotionLabel || 'neutral';
     emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
   });
 
@@ -122,20 +271,9 @@ export function generateInsights(checkins: any[], userId: string): InsightGenera
   if (emotionCounts[dominantEmotion] > 5) {
     insights.push({
       id: uuidv4(),
-      text: `Hai espresso spesso emozioni di tipo "${dominantEmotion}". Questo potrebbe indicare un pattern ricorrente.`,
+      text: `You've been feeling ${dominantEmotion} frequently. This pattern might be worth exploring further.`,
       insightType: 'pattern_recognition',
       sourceCheckins: recentCheckins.filter(c => c.emotionLabel === dominantEmotion).map(c => c.id.toString())
-    });
-  }
-
-  // Insight 3: Encouragement
-  const lastCheckin = checkins[0];
-  if (lastCheckin && lastCheckin.sentimentScore < 0) {
-    insights.push({
-      id: uuidv4(),
-      text: 'Ricorda che ogni giorno è una nuova opportunità. Il tuo giardino cresce con te.',
-      insightType: 'encouragement',
-      sourceCheckins: [lastCheckin.id.toString()]
     });
   }
 

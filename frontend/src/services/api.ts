@@ -56,7 +56,7 @@ export interface Garden {
 
 class ApiService {
   private api: any;
-  private baseURL = 'http://localhost:3001/v1';
+  private baseURL = 'http://localhost:4000';
 
   constructor() {
     this.api = axios.create({
@@ -68,42 +68,12 @@ class ApiService {
 
     // Add request interceptor to include auth token
     this.api.interceptors.request.use((config: any) => {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
     });
-
-    // Add response interceptor to handle token refresh
-    this.api.interceptors.response.use(
-      (response: any) => response,
-      async (error: any) => {
-        if (error.response?.status === 401) {
-          // Try to refresh token
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            try {
-              const refreshResponse = await axios.post(`${this.baseURL}/auth/refresh`, {
-                refreshToken,
-              });
-              const newTokens: any = refreshResponse.data;
-              localStorage.setItem('accessToken', newTokens.access);
-              localStorage.setItem('refreshToken', newTokens.refresh);
-
-              // Retry the original request
-              error.config.headers.Authorization = `Bearer ${newTokens.access}`;
-              return this.api.request(error.config);
-            } catch (refreshError) {
-              // Refresh failed, logout
-              this.logout();
-              throw refreshError;
-            }
-          }
-        }
-        throw error;
-      }
-    );
   }
 
   // Auth methods
@@ -124,19 +94,18 @@ class ApiService {
   }
 
   logout(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('token');
   }
 
   // Check-in methods
   async createCheckIn(checkInData: {
-    userId: string;
     text?: string;
+    sttText?: string;
     audioObjectKey?: string;
     emotionHint?: string;
     intensity?: number;
     tags?: string[];
-  }): Promise<{ checkin: CheckIn }> {
+  }): Promise<CheckIn> {
     const response = await this.api.post('/checkins', checkInData);
     return response.data;
   }
@@ -184,7 +153,6 @@ class ApiService {
   }
 
   async generateInsights(data: {
-    userId: string;
     fromDate?: string;
     toDate?: string;
     checkinIds?: string[];
@@ -206,7 +174,6 @@ class ApiService {
 
   // Upload methods
   async getSignedUrl(data: {
-    userId: string;
     contentType: string;
     lengthSeconds?: number;
   }): Promise<{ uploadUrl: string; objectKey: string }> {

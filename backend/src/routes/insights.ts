@@ -46,7 +46,7 @@ router.post('/generate', async (req: AuthRequest, res) => {
     }
 
     // Generate insights using ML
-    const newInsights = generateInsights(checkins, userId.toString());
+    const newInsights = await generateInsights(checkins, userId.toString());
 
     // Save insights to database
     for (const insight of newInsights) {

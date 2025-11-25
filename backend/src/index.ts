@@ -11,7 +11,8 @@ import uploadsRouter from './routes/uploads';
 import exportRouter from './routes/export';
 import insightsRouter from './routes/insights';
 import settingsRouter from './routes/settings';
-import { initializeDatabase } from './db';
+import analyticsRouter from './routes/analytics';
+import { initializeDatabase } from './services/database.service';
 
 dotenv.config();
 

@@ -2,15 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const db_1 = require("../db");
-const ml_1 = require("../ml");
+const database_service_1 = require("../services/database.service");
+const ml_service_1 = require("../services/ml.service");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
 // GET /checkins - List user's checkins
 router.get('/', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const checkins = await db_1.dbStatements.getCheckinsByUserId(userId);
+        const checkins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
         res.json(checkins);
     }
     catch (error) {
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const checkinId = parseInt(req.params.id);
-        const checkin = await db_1.dbStatements.getCheckinById(checkinId);
+        const checkin = await database_service_1.dbStatements.getCheckinById(checkinId);
         if (!checkin) {
             return res.status(404).json({ error: 'Checkin not found' });
         }
@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
         const userId = parseInt(req.user.id);
         // Analyze emotion from text
         const analysisText = text || sttText || '';
-        const emotionAnalysis = (0, ml_1.analyzeEmotion)(analysisText);
+        const emotionAnalysis = (0, ml_service_1.analyzeEmotion)(analysisText);
         // Create checkin with advanced fields
         const checkinData = {
             text: text || null,
@@ -58,16 +58,16 @@ router.post('/', async (req, res) => {
             intensity: emotionAnalysis.intensity,
             tags: tags || []
         };
-        const checkinId = await db_1.dbStatements.createCheckin(userId, checkinData);
+        const checkinId = await database_service_1.dbStatements.createCheckin(userId, checkinData);
         // Update garden health based on sentiment
-        const garden = await db_1.dbStatements.getGardenByUserId(userId);
+        const garden = await database_service_1.dbStatements.getGardenByUserId(userId);
         if (garden) {
             const healthChange = emotionAnalysis.sentimentScore * 0.1; // Scale sentiment to health change
             const newHealth = Math.max(0, Math.min(1, garden.health + healthChange));
-            await db_1.dbStatements.updateGardenHealth(newHealth, userId);
+            await database_service_1.dbStatements.updateGardenHealth(newHealth, userId);
         }
         // Return created checkin
-        const checkin = await db_1.dbStatements.getCheckinById(checkinId);
+        const checkin = await database_service_1.dbStatements.getCheckinById(checkinId);
         res.status(201).json(checkin);
     }
     catch (error) {

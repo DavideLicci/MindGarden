@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { dbStatements } from '../db';
+import { dbStatements } from '../services/database.service';
 
 const router = Router();
 

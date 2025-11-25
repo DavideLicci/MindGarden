@@ -2,21 +2,21 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const db_1 = require("../db");
+const database_service_1 = require("../services/database.service");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
 // GET /gardens/me - Get current user's garden snapshot
 router.get('/me', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const garden = await db_1.dbStatements.getGardenByUserId(userId);
+        const garden = await database_service_1.dbStatements.getGardenByUserId(userId);
         if (!garden) {
             return res.status(404).json({ error: 'Garden not found' });
         }
         // Get plants for this garden
-        const plants = await db_1.dbStatements.getPlantsByUserId(userId);
+        const plants = await database_service_1.dbStatements.getPlantsByUserId(userId);
         // Get recent checkins for lastCheckin info
-        const recentCheckins = await db_1.dbStatements.getRecentCheckinsByUserId(userId, 1);
+        const recentCheckins = await database_service_1.dbStatements.getRecentCheckinsByUserId(userId, 1);
         const gardenResponse = {
             gardenId: garden.id,
             userId: garden.user_id,

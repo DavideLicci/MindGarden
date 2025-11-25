@@ -1,25 +1,4 @@
-import { Router } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { dbStatements } from '../db';
-
-const router = Router();
-
-router.use(authMiddleware);
-
-// GET /analytics/emotion-trends - Get emotion trends over time
-router.get('/emotion-trends', async (req: AuthRequest, res) => {
-  try {
-    const userId = parseInt(req.user!.id);
-    const { days = 30 } = req.query;
-
-    const checkins = await dbStatements.getCheckinsByUserId(userId);
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - parseInt(days as string));
-
-    const recentCheckins = checkins.filter(c => new Date(c.created_at) >= cutoffDate);
-
-    // Group by date and emotion
-    const trends: { [date: string]: { [emotion: string]: number } } = {};
+const trends: { [date: string]: { [emotion: string]: number } } = {};
     const emotionCounts: { [emotion: string]: number } = {};
 
     recentCheckins.forEach(checkin => {

@@ -1,48 +1,35 @@
-# TODO: Implementazione Frontend MindGarden
+# Frontend Reorganization TODO
 
-## Stato: In Progress
+## Create New Folder Structure
+- [x] Create src/features/auth/
+- [x] Create src/features/checkin/
+- [x] Create src/features/garden/
+- [x] Create src/features/analytics/
+- [x] Create src/shared/
+- [x] Create src/core/
 
-### 1. Setup Progetto React
-- [ ] Creare directory `frontend` e inizializzare app React con Vite (React + TypeScript)
-- [ ] Installare dipendenze: @react-three/fiber, @react-three/drei, react-router-dom, axios, @types/node, etc.
+## Move Files
+- [x] Move LoginForm.tsx to src/features/auth/
+- [x] Move useAuth.tsx to src/features/auth/
+- [x] Move CheckInForm.tsx to src/features/checkin/
+- [x] Move GardenViewer.tsx to src/features/garden/
+- [x] Move ARPreview.tsx to src/features/garden/
+- [x] Move AnalyticsDashboard.tsx to src/features/analytics/
+- [x] Move Navigation.tsx to src/shared/
+- [x] Move api.ts to src/core/
 
-### 2. Struttura Progetto
-- [ ] Creare cartelle: src/components/, src/pages/, src/services/, src/hooks/, src/utils/
-- [ ] Configurare TypeScript e ESLint
+## Update Imports
+- [ ] Update imports in App.tsx
+- [ ] Update imports in moved components (LoginForm, CheckInForm, GardenViewer, AnalyticsDashboard)
+- [ ] Update imports in useAuth.tsx
 
-### 3. Integrazione API Backend
-- [ ] Creare servizio API con Axios per chiamate a backend (auth, checkins, gardens, etc.)
-- [ ] Implementare gestione JWT e refresh token
+## Add Analytics Route
+- [ ] Add analytics route to Navigation.tsx
+- [ ] Add analytics route to App.tsx
 
-### 4. Componenti Autenticazione
-- [ ] Componente LoginForm
-- [ ] Componente RegisterForm
-- [ ] Hook per gestione auth state
+## Cleanup
+- [ ] Delete old directories (src/components/, src/hooks/, src/services/)
 
-### 5. Componente Check-In
-- [ ] Form per check-in testuale
-- [ ] Supporto per upload audio (placeholder per ora)
-- [ ] Integrazione con API /checkins
-
-### 6. Garden Viewer 3D
-- [ ] Componente GardenViewer con Three.js
-- [ ] Fetch dati giardino da /gardens/me
-- [ ] Rendering piante 3D basato su PlantInstance (archetype, position, health, etc.)
-- [ ] Interazioni base (zoom, rotate)
-
-### 7. AR Preview
-- [ ] Componente ARPreview (placeholder iniziale)
-- [ ] Overlay o simulazione AR per anteprima giardino
-
-### 8. Routing e Navigazione
-- [ ] Setup React Router con route per: /login, /register, /garden, /checkin, /ar-preview
-- [ ] Componente Navigation/Layout
-
-### 9. Testing e Ottimizzazioni
-- [ ] Testare integrazione API con backend in esecuzione
-- [ ] Verificare rendering 3D e performance
-- [ ] Aggiungere stili CSS/Tailwind se necessario
-
-### 10. Deploy e Finalizzazione
-- [ ] Build produzione
-- [ ] Aggiornare README.md con istruzioni frontend
+## Testing
+- [ ] Test build
+- [ ] Test routing

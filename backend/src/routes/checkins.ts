@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { dbStatements } from '../db';
-import { analyzeEmotion } from '../ml';
+import { dbStatements } from '../services/database.service';
+import { analyzeEmotion } from '../services/ml.service';
 
 const router = Router();
 

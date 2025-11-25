@@ -1,4 +1,7 @@
 {
+  "name": "mindgarden-frontend",
+  "version": "0.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
@@ -6,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/axios": "^0.9.36",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.6",
@@ -21,12 +25,18 @@
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
+    "@types/d3": "^7.4.3",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "d3": "^7.9.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
+    "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",
-    "react-router": "^7.0.2",
+    "react-heatmap-grid": "^0.9.1",
+    "react-router-dom": "^7.0.2",
     "three": "^0.181.2"
   }
 }

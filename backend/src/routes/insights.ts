@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { dbStatements } from '../db';
-import { generateInsights, generateGardenKeeperInsight } from '../ml';
+import { dbStatements } from '../services/database.service';
+import { generateInsights, generateGardenKeeperInsight } from '../services/ml.service';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();

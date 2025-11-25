@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const db_1 = require("../db");
+const database_service_1 = require("../services/database.service");
 const router = (0, express_1.Router)();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 router.post('/register', async (req, res) => {
@@ -16,15 +16,15 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Email and password required' });
         }
         // Check if user exists
-        const existing = await db_1.dbStatements.getUserByEmail(email);
+        const existing = await database_service_1.dbStatements.getUserByEmail(email);
         if (existing) {
             return res.status(400).json({ error: 'User already exists' });
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         // Create user
-        const userId = await db_1.dbStatements.createUser(email, hashedPassword);
+        const userId = await database_service_1.dbStatements.createUser(email, hashedPassword);
         // Create garden for user
-        await db_1.dbStatements.createGarden(userId);
+        await database_service_1.dbStatements.createGarden(userId);
         const token = jsonwebtoken_1.default.sign({ id: userId.toString(), email }, JWT_SECRET);
         res.status(201).json({ token });
     }
@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
         }
-        const user = await db_1.dbStatements.getUserByEmail(email);
+        const user = await database_service_1.dbStatements.getUserByEmail(email);
         if (!user || !(await bcryptjs_1.default.compare(password, user.password))) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }

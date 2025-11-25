@@ -1,35 +1,89 @@
-# TODO: Completare Backend MindGarden
+# MindGarden Project Fixes and Reorganization
 
-## Stato: Completato
+## ✅ Completed Tasks
+- [x] Fixed backend import error in checkins.ts (changed '../db' to '../services/database.service')
+- [x] Added missing uuid dependency to backend/package.json
+- [x] Fixed frontend Tokens interface usage in useAuth.tsx (changed tokens.access to tokens.accessToken)
+- [x] Created missing backend/src/ml.ts file with ML service functions
+- [x] Backend build now passes without errors
+- [x] Frontend build passes without errors
 
-### 1. Aggiornare Database (db.ts)
-- [x] Aggiungere campi mancanti a tabella checkins: emotionLabel, sentimentScore, intensity, tags, audioObjectKey, sttText, embeddingsId, status
-- [x] Creare tabella plants (id, userId, checkinId, archetype, params, position, styleSkin, health, growthProgress, createdAt)
-- [x] Creare tabella insights (id, userId, createdAt, text, insightType, sourceCheckins)
-- [x] Creare tabella settings (userId, processingMode, audioRetentionDays, shareAnonymized)
-- [x] Aggiornare dbStatements con nuove operazioni CRUD per plants, insights, settings
+## 🔄 Remaining Tasks
 
-### 2. Aggiornare Routes Esistenti
-- [x] routes/checkins.ts: Implementare GET /checkins/{id}
-- [x] routes/checkins.ts: Aggiornare POST per includere campi avanzati e logica analisi emozioni
-- [x] routes/gardens.ts: Aggiornare per restituire schema Garden con plants array
+### Backend Reorganization
+- [ ] Move backend/src/db.ts to backend/src/services/database.service.ts
+- [ ] Move backend/src/ml.ts to backend/src/services/ml.service.ts
+- [ ] Update all import paths in backend routes to use new service locations
+- [ ] Update backend/src/index.ts imports to use new service paths
 
-### 3. Creare Nuove Routes
-- [x] routes/plants.ts: Implementare GET /plants/{plantId}, POST /plants/{plantId}/actions
-- [x] routes/insights.ts: Implementare GET /insights, POST /insights/generate
-- [x] routes/uploads.ts: Implementare POST /uploads/signed-url
-- [x] routes/export.ts: Implementare POST /export, DELETE /data
-- [x] routes/settings.ts: Implementare GET /settings/me, PATCH /settings/me
-- [x] routes/analytics.ts: Implementare emotion-trends, garden-health, achievements, report
+### Frontend Reorganization
+- [ ] Create feature-based folder structure in frontend/src/
+- [ ] Move components to appropriate feature folders:
+  - LoginForm.tsx → src/features/auth/
+  - CheckInForm.tsx → src/features/checkin/
+  - GardenViewer.tsx → src/features/garden/
+  - AnalyticsDashboard.tsx → src/features/analytics/
+  - ARPreview.tsx → src/features/garden/
+  - Navigation.tsx → src/shared/
+- [ ] Move hooks to feature folders:
+  - useAuth.tsx → src/features/auth/
+- [ ] Move services to core folder:
+  - api.ts → src/core/
+- [ ] Update all import paths in components and App.tsx
 
-### 4. Aggiornare index.ts
-- [x] Importare e aggiungere nuove route
+### Project Structure Cleanup
+- [ ] Move root-level files to appropriate folders:
+  - scripts/ → scripts/
+  - docs/ → docs/
+  - design/ → design/
+  - openapi/ → openapi/
+  - figma-plugin/ → figma-plugin/
+- [ ] Update any references to moved files
 
-### 5. Aggiungere Logica ML Placeholder
-- [x] Funzione per analisi emozioni basata su parole chiave
-- [x] Funzione per generazione insights basata su checkins recenti
-- [x] Placeholder per STT (speech-to-text)
+### Testing
+- [ ] Run backend build to ensure all imports work
+- [ ] Run frontend build to ensure all imports work
+- [ ] Test that both backend and frontend start successfully
 
-### 6. Testing
-- [ ] Testare endpoint con curl per verificare funzionamento (server non risponde, possibile errore runtime)
-- [ ] Verificare allineamento con OpenAPI spec
+## 📁 Target Project Structure
+
+```
+mindgarden/
+├── backend/
+│   ├── src/
+│   │   ├── index.ts
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   └── services/
+│   │       ├── database.service.ts (moved from db.ts)
+│   │       └── ml.service.ts (moved from ml.ts)
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── core/
+│   │   │   └── api.ts (moved from services/api.ts)
+│   │   ├── shared/
+│   │   │   └── Navigation.tsx (moved from components/)
+│   │   ├── features/
+│   │   │   ├── auth/
+│   │   │   │   ├── LoginForm.tsx
+│   │   │   │   └── useAuth.tsx
+│   │   │   ├── checkin/
+│   │   │   │   └── CheckInForm.tsx
+│   │   │   ├── garden/
+│   │   │   │   ├── GardenViewer.tsx
+│   │   │   │   └── ARPreview.tsx
+│   │   │   ├── analytics/
+│   │   │   │   └── AnalyticsDashboard.tsx
+│   │   │   └── settings/
+│   │   ├── App.tsx
+│   │   └── index.tsx
+│   └── package.json
+├── scripts/
+├── docs/
+├── design/
+├── openapi/
+├── figma-plugin/
+├── README.md
+├── TODO.md
+└── CHANGELOG.md

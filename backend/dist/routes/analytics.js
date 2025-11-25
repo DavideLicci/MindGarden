@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const db_1 = require("../db");
+const database_service_1 = require("../services/database.service");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
 // GET /analytics/emotion-trends - Get emotion trends over time
@@ -10,7 +10,7 @@ router.get('/emotion-trends', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
         const { days = 30 } = req.query;
-        const checkins = await db_1.dbStatements.getCheckinsByUserId(userId);
+        const checkins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
         const recentCheckins = checkins.filter(c => new Date(c.created_at) >= cutoffDate);
@@ -52,9 +52,9 @@ router.get('/emotion-trends', async (req, res) => {
 router.get('/garden-health', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const garden = await db_1.dbStatements.getGardenByUserId(userId);
-        const plants = await db_1.dbStatements.getPlantsByUserId(userId);
-        const checkins = await db_1.dbStatements.getCheckinsByUserId(userId);
+        const garden = await database_service_1.dbStatements.getGardenByUserId(userId);
+        const plants = await database_service_1.dbStatements.getPlantsByUserId(userId);
+        const checkins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
         // Calculate health metrics
         const avgPlantHealth = plants.length > 0
             ? plants.reduce((sum, p) => sum + p.health, 0) / plants.length
@@ -98,9 +98,9 @@ router.get('/garden-health', async (req, res) => {
 router.get('/achievements', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const checkins = await db_1.dbStatements.getCheckinsByUserId(userId);
-        const plants = await db_1.dbStatements.getPlantsByUserId(userId);
-        const garden = await db_1.dbStatements.getGardenByUserId(userId);
+        const checkins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
+        const plants = await database_service_1.dbStatements.getPlantsByUserId(userId);
+        const garden = await database_service_1.dbStatements.getGardenByUserId(userId);
         const achievements = [];
         // Check-in achievements
         if (checkins.length >= 1)
@@ -167,7 +167,7 @@ router.get('/report', async (req, res) => {
         const userId = parseInt(req.user.id);
         const { period = 'weekly' } = req.query; // 'weekly' or 'monthly'
         const days = period === 'monthly' ? 30 : 7;
-        const checkins = await db_1.dbStatements.getCheckinsByUserId(userId);
+        const checkins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         const periodCheckins = checkins.filter(c => new Date(c.created_at) >= cutoffDate);

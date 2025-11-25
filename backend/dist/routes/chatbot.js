@@ -27,7 +27,7 @@ router.post('/conversation', async (req, res) => {
         const allCheckins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
         const recentCheckins = allCheckins.slice(0, 10);
         // Generate AI response with emotion context
-        const aiResponse = await (0, ml_service_1.generateChatbotResponse)(message, conversationHistory, recentCheckins, userId);
+        const aiResponse = await (0, ml_service_1.generateChatbotResponse)(message, conversationHistory, recentCheckins, userId.toString());
         res.json({
             response: aiResponse,
             timestamp: new Date().toISOString(),

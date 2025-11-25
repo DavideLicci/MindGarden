@@ -1,0 +1,32 @@
+{
+  "name": "mindgarden",
+  "version": "1.0.0",
+  "description": "MindGarden - AI-powered emotional wellness platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "deploy": "vercel --prod",
+    "preview": "vercel"
+  },
+  "keywords": [
+    "mindfulness",
+    "emotional-wellness",
+    "ai-chatbot",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "MindGarden Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

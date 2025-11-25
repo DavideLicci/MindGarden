@@ -1,281 +1,221 @@
-import * as sqlite3 from 'sqlite3';
-import path from 'path';
+import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 
-const DB_PATH = path.join(__dirname, '..', 'mindgarden.db');
+const pool = new Pool({
+  host: 'db.zrzujsvjrzuxuqwdzbor.supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres',
+  password: process.env.DB_PASSWORD,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
-let db: sqlite3.Database;
+export async function initializeDatabase() {
+  console.log('Initializing PostgreSQL database...');
 
-export function initializeDatabase() {
-  console.log('Initializing database at:', DB_PATH);
-  db = new sqlite3.Database(DB_PATH);
-
-  // Enable foreign keys
-  db.run('PRAGMA foreign_keys = ON');
-
-  // Create tables
-  db.serialize(() => {
-    db.run(`
+  try {
+    // Create tables
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    db.run(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS gardens (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
-        user_id INTEGER NOT NULL,
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         health REAL DEFAULT 0.5,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    db.run(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS checkins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         text TEXT,
         stt_text TEXT,
         audio_object_key TEXT,
         emotion_label TEXT,
         sentiment_score REAL,
         intensity REAL,
-        tags TEXT,
+        tags JSONB DEFAULT '[]'::jsonb,
         embeddings_id TEXT,
         status TEXT DEFAULT 'complete',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    db.run(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS plants (
         id TEXT PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        checkin_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        checkin_id INTEGER REFERENCES checkins(id) ON DELETE SET NULL,
         archetype TEXT,
-        params TEXT,
-        position TEXT,
+        params JSONB DEFAULT '{}'::jsonb,
+        position JSONB DEFAULT '{}'::jsonb,
         style_skin TEXT,
         health REAL DEFAULT 0.5,
         growth_progress REAL DEFAULT 0.0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (checkin_id) REFERENCES checkins(id) ON DELETE SET NULL
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    db.run(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS insights (
         id TEXT PRIMARY KEY,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         text TEXT NOT NULL,
         insight_type TEXT,
-        source_checkins TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        source_checkins JSONB DEFAULT '[]'::jsonb,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    db.run(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS settings (
-        user_id INTEGER PRIMARY KEY,
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
         processing_mode TEXT DEFAULT 'cloud',
         audio_retention_days INTEGER DEFAULT 30,
-        share_anonymized BOOLEAN DEFAULT 0,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        share_anonymized BOOLEAN DEFAULT false
       )
     `);
-  });
 
-  console.log('Database initialized at', DB_PATH);
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    throw error;
+  }
 }
 
 // Database operations
 export const dbStatements = {
   // Users
-  createUser: (email: string, password: string): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      db.run('INSERT INTO users (email, password) VALUES (?, ?)', [email, password], function(err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      });
-    });
+  createUser: async (email: string, password: string): Promise<number> => {
+    const result = await pool.query(
+      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id',
+      [email, password]
+    );
+    return result.rows[0].id;
   },
-  getUserByEmail: (email: string): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM users WHERE email = ?', [email], (err, row: any) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+  getUserByEmail: async (email: string): Promise<any> => {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    return result.rows[0] || null;
   },
 
   // Gardens
-  createGarden: (userId: number): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const id = uuidv4();
-      db.run('INSERT INTO gardens (id, user_id) VALUES (?, ?)', [id, userId], function(err) {
-        if (err) reject(err);
-        else resolve(id);
-      });
-    });
+  createGarden: async (userId: number): Promise<string> => {
+    const id = uuidv4();
+    await pool.query('INSERT INTO gardens (id, user_id) VALUES ($1, $2)', [id, userId]);
+    return id;
   },
-  getGardenByUserId: (userId: number): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM gardens WHERE user_id = ?', [userId], (err, row: any) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+  getGardenByUserId: async (userId: number): Promise<any> => {
+    const result = await pool.query('SELECT * FROM gardens WHERE user_id = $1', [userId]);
+    return result.rows[0] || null;
   },
-  updateGardenHealth: (health: number, userId: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      db.run('UPDATE gardens SET health = ? WHERE user_id = ?', [health, userId], function(err) {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+  updateGardenHealth: async (health: number, userId: number): Promise<void> => {
+    await pool.query('UPDATE gardens SET health = $1 WHERE user_id = $2', [health, userId]);
   },
 
   // Checkins
-  createCheckin: (userId: number, data: any): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      const { text, sttText, audioObjectKey, emotionLabel, sentimentScore, intensity, tags } = data;
-      db.run(`
-        INSERT INTO checkins (user_id, text, stt_text, audio_object_key, emotion_label, sentiment_score, intensity, tags)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [userId, text, sttText, audioObjectKey, emotionLabel, sentimentScore, intensity, JSON.stringify(tags || [])], function(err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      });
-    });
+  createCheckin: async (userId: number, data: any): Promise<number> => {
+    const { text, sttText, audioObjectKey, emotionLabel, sentimentScore, intensity, tags } = data;
+    const result = await pool.query(`
+      INSERT INTO checkins (user_id, text, stt_text, audio_object_key, emotion_label, sentiment_score, intensity, tags)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
+    `, [userId, text, sttText, audioObjectKey, emotionLabel, sentimentScore, intensity, JSON.stringify(tags || [])]);
+    return result.rows[0].id;
   },
-  getCheckinsByUserId: (userId: number): Promise<any[]> => {
-    return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM checkins WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, rows) => {
-        if (err) reject(err);
-        else resolve((rows as any[]).map(row => ({ ...(row as any), tags: JSON.parse((row as any).tags || '[]') })));
-      });
-    });
+  getCheckinsByUserId: async (userId: number): Promise<any[]> => {
+    const result = await pool.query('SELECT * FROM checkins WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    return result.rows.map(row => ({ ...row, tags: row.tags || [] }));
   },
-  getCheckinById: (id: number): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM checkins WHERE id = ?', [id], (err, row) => {
-        if (err) reject(err);
-        else if (row) resolve({ ...(row as any), tags: JSON.parse((row as any).tags || '[]') });
-        else resolve(null);
-      });
-    });
+  getCheckinById: async (id: number): Promise<any> => {
+    const result = await pool.query('SELECT * FROM checkins WHERE id = $1', [id]);
+    if (result.rows[0]) {
+      return { ...result.rows[0], tags: result.rows[0].tags || [] };
+    }
+    return null;
   },
-  getRecentCheckinsByUserId: (userId: number, limit: number): Promise<any[]> => {
-    return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM checkins WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit], (err, rows) => {
-        if (err) reject(err);
-        else resolve((rows as any[]).map((row: any) => ({ ...row, tags: JSON.parse(row.tags || '[]') })));
-      });
-    });
+  getRecentCheckinsByUserId: async (userId: number, limit: number): Promise<any[]> => {
+    const result = await pool.query('SELECT * FROM checkins WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2', [userId, limit]);
+    return result.rows.map(row => ({ ...row, tags: row.tags || [] }));
   },
 
   // Plants
-  createPlant: (data: any): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const { id, userId, checkinId, archetype, params, position, styleSkin, health, growthProgress } = data;
-      db.run(`
-        INSERT INTO plants (id, user_id, checkin_id, archetype, params, position, style_skin, health, growth_progress)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [id, userId, checkinId, archetype, JSON.stringify(params || {}), JSON.stringify(position || {}), styleSkin, health, growthProgress], function(err) {
-        if (err) reject(err);
-        else resolve(id);
-      });
-    });
+  createPlant: async (data: any): Promise<string> => {
+    const { id, userId, checkinId, archetype, params, position, styleSkin, health, growthProgress } = data;
+    await pool.query(`
+      INSERT INTO plants (id, user_id, checkin_id, archetype, params, position, style_skin, health, growth_progress)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [id, userId, checkinId, archetype, JSON.stringify(params || {}), JSON.stringify(position || {}), styleSkin, health, growthProgress]);
+    return id;
   },
-  getPlantsByUserId: (userId: number): Promise<any[]> => {
-    return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM plants WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, rows: any[]) => {
-        if (err) reject(err);
-        else resolve(rows.map(row => ({
-          ...row,
-          params: JSON.parse(row.params || '{}'),
-          position: JSON.parse(row.position || '{}')
-        })));
-      });
-    });
+  getPlantsByUserId: async (userId: number): Promise<any[]> => {
+    const result = await pool.query('SELECT * FROM plants WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    return result.rows.map(row => ({
+      ...row,
+      params: row.params || {},
+      position: row.position || {}
+    }));
   },
-  getPlantById: (id: string): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM plants WHERE id = ?', [id], (err, row: any) => {
-        if (err) reject(err);
-        else if (row) resolve({
-          ...row,
-          params: JSON.parse(row.params || '{}'),
-          position: JSON.parse(row.position || '{}')
-        });
-        else resolve(null);
-      });
-    });
+  getPlantById: async (id: string): Promise<any> => {
+    const result = await pool.query('SELECT * FROM plants WHERE id = $1', [id]);
+    if (result.rows[0]) {
+      return {
+        ...result.rows[0],
+        params: result.rows[0].params || {},
+        position: result.rows[0].position || {}
+      };
+    }
+    return null;
   },
-  updatePlantHealth: (id: string, health: number, growthProgress: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      db.run('UPDATE plants SET health = ?, growth_progress = ? WHERE id = ?', [health, growthProgress, id], function(err) {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+  updatePlantHealth: async (id: string, health: number, growthProgress: number): Promise<void> => {
+    await pool.query('UPDATE plants SET health = $1, growth_progress = $2 WHERE id = $3', [health, growthProgress, id]);
   },
 
   // Insights
-  createInsight: (data: any): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const { id, userId, text, insightType, sourceCheckins } = data;
-      db.run(`
-        INSERT INTO insights (id, user_id, text, insight_type, source_checkins)
-        VALUES (?, ?, ?, ?, ?)
-      `, [id, userId, text, insightType, JSON.stringify(sourceCheckins || [])], function(err) {
-        if (err) reject(err);
-        else resolve(id);
-      });
-    });
+  createInsight: async (data: any): Promise<string> => {
+    const { id, userId, text, insightType, sourceCheckins } = data;
+    await pool.query(`
+      INSERT INTO insights (id, user_id, text, insight_type, source_checkins)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [id, userId, text, insightType, JSON.stringify(sourceCheckins || [])]);
+    return id;
   },
-  getInsightsByUserId: (userId: number, limit: number): Promise<any[]> => {
-    return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM insights WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit], (err, rows: any[]) => {
-        if (err) reject(err);
-        else resolve(rows.map(row => ({ ...row, sourceCheckins: JSON.parse(row.source_checkins || '[]') })));
-      });
-    });
+  getInsightsByUserId: async (userId: number, limit: number): Promise<any[]> => {
+    const result = await pool.query('SELECT * FROM insights WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2', [userId, limit]);
+    return result.rows.map(row => ({ ...row, sourceCheckins: row.sourceCheckins || [] }));
   },
 
   // Settings
-  getSettingsByUserId: (userId: number): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM settings WHERE user_id = ?', [userId], (err, row: any) => {
-        if (err) reject(err);
-        else resolve(row || { userId, processingMode: 'cloud', audioRetentionDays: 30, shareAnonymized: false });
-      });
-    });
+  getSettingsByUserId: async (userId: number): Promise<any> => {
+    const result = await pool.query('SELECT * FROM settings WHERE user_id = $1', [userId]);
+    return result.rows[0] || { userId, processingMode: 'cloud', audioRetentionDays: 30, shareAnonymized: false };
   },
-  updateSettings: (userId: number, data: any): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const { processingMode, audioRetentionDays, shareAnonymized } = data;
-      db.run(`
-        INSERT OR REPLACE INTO settings (user_id, processing_mode, audio_retention_days, share_anonymized)
-        VALUES (?, ?, ?, ?)
-      `, [userId, processingMode, audioRetentionDays, shareAnonymized], function(err) {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+  updateSettings: async (userId: number, data: any): Promise<void> => {
+    const { processingMode, audioRetentionDays, shareAnonymized } = data;
+    await pool.query(`
+      INSERT INTO settings (user_id, processing_mode, audio_retention_days, share_anonymized)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id) DO UPDATE SET
+        processing_mode = EXCLUDED.processing_mode,
+        audio_retention_days = EXCLUDED.audio_retention_days,
+        share_anonymized = EXCLUDED.share_anonymized
+    `, [userId, processingMode, audioRetentionDays, shareAnonymized]);
   },
 };
 
 // Close database connection on process exit
-process.on('exit', () => db?.close());
+process.on('exit', () => pool.end());
 process.on('SIGHUP', () => process.exit(128 + 1));
 process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));

@@ -1,211 +1,35 @@
-import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// Types based on OpenAPI spec
-export interface User {
-  id: string;
-  email: string;
-  createdAt: string;
-}
+export const api = {
+  // Auth endpoints
+  login: `${API_BASE_URL}/api/auth/login`,
+  register: `${API_BASE_URL}/api/auth/register`,
+  logout: `${API_BASE_URL}/api/auth/logout`,
 
-export interface Tokens {
-  accessToken: string;
-  refreshToken: string;
-}
+  // Check-in endpoints
+  checkins: `${API_BASE_URL}/api/checkins`,
 
-export interface AuthResponse {
-  user: User;
-  tokens: Tokens;
-}
+  // Garden endpoints
+  gardens: `${API_BASE_URL}/api/gardens`,
+  plants: `${API_BASE_URL}/api/plants`,
 
-export interface CheckIn {
-  id: string;
-  userId: string;
-  createdAt: string;
-  timestamp: string;
-  text?: string;
-  sttText?: string;
-  audioObjectKey?: string;
-  emotionLabel?: string;
-  sentimentScore?: number;
-  intensity?: number;
-  tags?: string[];
-  embeddingsId?: string;
-  status?: string;
-}
+  // Analytics endpoints
+  analytics: `${API_BASE_URL}/api/analytics`,
 
-export interface PlantInstance {
-  id: string;
-  userId: string;
-  checkinId: string;
-  archetype: string;
-  params?: any;
-  position: { x: number; y: number; z: number };
-  styleSkin?: string;
-  health: number;
-  growthProgress: number;
-  createdAt: string;
-}
+  // Insights endpoints
+  insights: `${API_BASE_URL}/api/insights`,
 
-export interface Garden {
-  gardenId: string;
-  userId: string;
-  createdAt: string;
-  plants: PlantInstance[];
-  aggregate?: any;
-}
+  // Chatbot endpoints
+  chatbot: `${API_BASE_URL}/api/chatbot`,
 
-class ApiService {
-  private api: any;
-  private baseURL = 'http://localhost:4000';
+  // Settings endpoints
+  settings: `${API_BASE_URL}/api/settings`,
 
-  constructor() {
-    this.api = axios.create({
-      baseURL: this.baseURL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  // Export endpoints
+  export: `${API_BASE_URL}/api/export`,
 
-    // Add request interceptor to include auth token
-    this.api.interceptors.request.use((config: any) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
-  }
+  // Upload endpoints
+  uploads: `${API_BASE_URL}/api/uploads`,
+};
 
-  // Auth methods
-  async register(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.api.post('/auth/register', {
-      email,
-      password,
-    });
-    return response.data;
-  }
-
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.api.post('/auth/login', {
-      email,
-      password,
-    });
-    return response.data;
-  }
-
-  logout(): void {
-    localStorage.removeItem('token');
-  }
-
-  // Check-in methods
-  async createCheckIn(checkInData: {
-    text?: string;
-    sttText?: string;
-    audioObjectKey?: string;
-    emotionHint?: string;
-    intensity?: number;
-    tags?: string[];
-  }): Promise<CheckIn> {
-    const response = await this.api.post('/checkins', checkInData);
-    return response.data;
-  }
-
-  async getCheckIns(params?: {
-    from?: string;
-    to?: string;
-    emotion?: string;
-    limit?: number;
-  }): Promise<CheckIn[]> {
-    const response = await this.api.get('/checkins', { params });
-    return response.data;
-  }
-
-  async getCheckIn(id: string): Promise<CheckIn> {
-    const response = await this.api.get(`/checkins/${id}`);
-    return response.data;
-  }
-
-  // Garden methods
-  async getGarden(): Promise<Garden> {
-    const response = await this.api.get('/gardens/me');
-    return response.data;
-  }
-
-  // Plant methods
-  async getPlant(plantId: string): Promise<PlantInstance> {
-    const response = await this.api.get(`/plants/${plantId}`);
-    return response.data;
-  }
-
-  async performPlantAction(plantId: string, action: {
-    userId: string;
-    action: string;
-    metadata?: any;
-  }): Promise<PlantInstance> {
-    const response = await this.api.post(`/plants/${plantId}/actions`, action);
-    return response.data;
-  }
-
-  // Insights methods
-  async getInsights(limit?: number): Promise<any[]> {
-    const response = await this.api.get('/insights', { params: { limit } });
-    return response.data;
-  }
-
-  async generateInsights(data: {
-    fromDate?: string;
-    toDate?: string;
-    checkinIds?: string[];
-  }): Promise<{ jobId: string }> {
-    const response = await this.api.post('/insights/generate', data);
-    return response.data;
-  }
-
-  // Settings methods
-  async getSettings(): Promise<any> {
-    const response = await this.api.get('/settings/me');
-    return response.data;
-  }
-
-  async updateSettings(settings: any): Promise<any> {
-    const response = await this.api.patch('/settings/me', settings);
-    return response.data;
-  }
-
-  // Upload methods
-  async getSignedUrl(data: {
-    contentType: string;
-    lengthSeconds?: number;
-  }): Promise<{ uploadUrl: string; objectKey: string }> {
-    const response = await this.api.post('/uploads/signed-url', data);
-    return response.data;
-  }
-
-  // Generic HTTP methods
-  async get(url: string, config?: any): Promise<any> {
-    const response = await this.api.get(url, config);
-    return response.data;
-  }
-
-  async post(url: string, data?: any, config?: any): Promise<any> {
-    const response = await this.api.post(url, data, config);
-    return response.data;
-  }
-
-  async put(url: string, data?: any, config?: any): Promise<any> {
-    const response = await this.api.put(url, data, config);
-    return response.data;
-  }
-
-  async patch(url: string, data?: any, config?: any): Promise<any> {
-    const response = await this.api.patch(url, data, config);
-    return response.data;
-  }
-
-  async delete(url: string, config?: any): Promise<any> {
-    const response = await this.api.delete(url, config);
-    return response.data;
-  }
-}
-
-export const apiService = new ApiService();
+export default api;

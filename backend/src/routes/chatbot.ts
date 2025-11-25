@@ -33,7 +33,7 @@ router.post('/conversation', async (req: AuthRequest, res) => {
     const recentCheckins = allCheckins.slice(0, 10);
 
     // Generate AI response with emotion context
-    const aiResponse = await generateChatbotResponse(message, conversationHistory, recentCheckins, userId);
+    const aiResponse = await generateChatbotResponse(message, conversationHistory, recentCheckins, userId.toString());
 
     res.json({
       response: aiResponse,

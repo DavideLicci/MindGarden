@@ -16,12 +16,12 @@ const export_1 = __importDefault(require("./routes/export"));
 const insights_1 = __importDefault(require("./routes/insights"));
 const settings_1 = __importDefault(require("./routes/settings"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
-const database_service_1 = require("./services/database.service");
+const database_service_sqlite_1 = require("./services/database.service.sqlite");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 // Initialize database
-(0, database_service_1.initializeDatabase)();
+(0, database_service_sqlite_1.initializeDatabase)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: '5mb' }));
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

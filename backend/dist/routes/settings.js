@@ -2,14 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const database_service_1 = require("../services/database.service");
+const database_service_sqlite_1 = require("../services/database.service.sqlite");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
 // GET /settings/me - Get current user's settings
 router.get('/me', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const settings = await database_service_1.dbStatements.getSettingsByUserId(userId);
+        const settings = await database_service_sqlite_1.dbStatements.getSettingsByUserId(userId);
         res.json(settings);
     }
     catch (error) {
@@ -39,9 +39,9 @@ router.patch('/me', async (req, res) => {
             updateData.audioRetentionDays = audioRetentionDays;
         if (shareAnonymized !== undefined)
             updateData.shareAnonymized = shareAnonymized;
-        await database_service_1.dbStatements.updateSettings(userId, updateData);
+        await database_service_sqlite_1.dbStatements.updateSettings(userId, updateData);
         // Return updated settings
-        const updatedSettings = await database_service_1.dbStatements.getSettingsByUserId(userId);
+        const updatedSettings = await database_service_sqlite_1.dbStatements.getSettingsByUserId(userId);
         res.json(updatedSettings);
     }
     catch (error) {

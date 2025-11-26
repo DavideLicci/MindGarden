@@ -2,14 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const database_service_1 = require("../services/database.service");
+const database_service_sqlite_1 = require("../services/database.service.sqlite");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
 // GET /plants/:plantId - Get plant instance detail
 router.get('/:plantId', async (req, res) => {
     try {
         const { plantId } = req.params;
-        const plant = await database_service_1.dbStatements.getPlantById(plantId);
+        const plant = await database_service_sqlite_1.dbStatements.getPlantById(plantId);
         if (!plant) {
             return res.status(404).json({ error: 'Plant not found' });
         }
@@ -32,7 +32,7 @@ router.post('/:plantId/actions', async (req, res) => {
         if (!action) {
             return res.status(400).json({ error: 'action is required' });
         }
-        const plant = await database_service_1.dbStatements.getPlantById(plantId);
+        const plant = await database_service_sqlite_1.dbStatements.getPlantById(plantId);
         if (!plant) {
             return res.status(404).json({ error: 'Plant not found' });
         }
@@ -68,9 +68,9 @@ router.post('/:plantId/actions', async (req, res) => {
         }
         const newHealth = Math.max(0, Math.min(1, plant.health + healthChange));
         const newGrowth = Math.min(1, plant.growth_progress + growthChange);
-        await database_service_1.dbStatements.updatePlantHealth(plantId, newHealth, newGrowth);
+        await database_service_sqlite_1.dbStatements.updatePlantHealth(plantId, newHealth, newGrowth);
         // Return updated plant
-        const updatedPlant = await database_service_1.dbStatements.getPlantById(plantId);
+        const updatedPlant = await database_service_sqlite_1.dbStatements.getPlantById(plantId);
         res.json(updatedPlant);
     }
     catch (error) {

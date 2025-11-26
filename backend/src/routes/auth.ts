@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbStatements } from '../services/database.service';
+import { dbStatements } from '../services/database.service.sqlite';
 
 const router = Router();
 

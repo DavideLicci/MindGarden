@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { dbStatements } from '../services/database.service';
+import { dbStatements } from '../services/database.service.sqlite';
 
 const router = Router();
 

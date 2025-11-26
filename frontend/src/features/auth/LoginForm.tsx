@@ -18,9 +18,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ isRegister = false }) => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      if (isRegister) {
+        await register(email, password);
+      } else {
+        await login(email, password);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Login failed');
+      setError(err.response?.data?.error || 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +82,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ isRegister = false }) => {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? (isRegister ? 'Creating account...' : 'Signing in...') : (isRegister ? 'Create account' : 'Sign in')}
             </button>
           </div>
         </form>

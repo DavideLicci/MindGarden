@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const database_service_1 = require("../services/database.service");
+const database_service_sqlite_1 = require("../services/database.service.sqlite");
 const ml_service_1 = require("../services/ml.service");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
@@ -24,7 +24,7 @@ router.post('/conversation', async (req, res) => {
         }
         const userId = parseInt(req.user.id);
         // Get recent checkins for emotion context (limit to prevent performance issues)
-        const allCheckins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
+        const allCheckins = await database_service_sqlite_1.dbStatements.getCheckinsByUserId(userId);
         const recentCheckins = allCheckins.slice(0, 10);
         // Generate AI response with emotion context
         const aiResponse = await (0, ml_service_1.generateChatbotResponse)(message, conversationHistory, recentCheckins, userId.toString());
@@ -57,7 +57,7 @@ router.get('/context', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
         // Get recent checkins for context
-        const allCheckins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
+        const allCheckins = await database_service_sqlite_1.dbStatements.getCheckinsByUserId(userId);
         const recentCheckins = allCheckins.slice(0, 5);
         if (recentCheckins.length === 0) {
             return res.json({
@@ -109,7 +109,7 @@ router.get('/context', async (req, res) => {
 router.get('/suggestions', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const allCheckins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
+        const allCheckins = await database_service_sqlite_1.dbStatements.getCheckinsByUserId(userId);
         const recentCheckins = allCheckins.slice(0, 3);
         let suggestions = [];
         if (recentCheckins.length === 0) {

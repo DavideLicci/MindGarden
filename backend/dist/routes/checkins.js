@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const database_service_1 = require("../services/database.service");
+const database_service_sqlite_1 = require("../services/database.service.sqlite");
 const ml_service_1 = require("../services/ml.service");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
@@ -10,7 +10,7 @@ router.use(auth_1.authMiddleware);
 router.get('/', async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
-        const checkins = await database_service_1.dbStatements.getCheckinsByUserId(userId);
+        const checkins = await database_service_sqlite_1.dbStatements.getCheckinsByUserId(userId);
         res.json(checkins);
     }
     catch (error) {
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const checkinId = parseInt(req.params.id);
-        const checkin = await database_service_1.dbStatements.getCheckinById(checkinId);
+        const checkin = await database_service_sqlite_1.dbStatements.getCheckinById(checkinId);
         if (!checkin) {
             return res.status(404).json({ error: 'Checkin not found' });
         }
@@ -58,16 +58,16 @@ router.post('/', async (req, res) => {
             intensity: emotionAnalysis.intensity,
             tags: tags || []
         };
-        const checkinId = await database_service_1.dbStatements.createCheckin(userId, checkinData);
+        const checkinId = await database_service_sqlite_1.dbStatements.createCheckin(userId, checkinData);
         // Update garden health based on sentiment
-        const garden = await database_service_1.dbStatements.getGardenByUserId(userId);
+        const garden = await database_service_sqlite_1.dbStatements.getGardenByUserId(userId);
         if (garden) {
             const healthChange = emotionAnalysis.sentimentScore * 0.1; // Scale sentiment to health change
             const newHealth = Math.max(0, Math.min(1, garden.health + healthChange));
-            await database_service_1.dbStatements.updateGardenHealth(newHealth, userId);
+            await database_service_sqlite_1.dbStatements.updateGardenHealth(newHealth, userId);
         }
         // Return created checkin
-        const checkin = await database_service_1.dbStatements.getCheckinById(checkinId);
+        const checkin = await database_service_sqlite_1.dbStatements.getCheckinById(checkinId);
         res.status(201).json(checkin);
     }
     catch (error) {

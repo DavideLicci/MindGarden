@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const api = {
@@ -30,6 +32,31 @@ export const api = {
 
   // Upload endpoints
   uploads: `${API_BASE_URL}/api/uploads`,
+};
+
+export interface User {
+  id: number;
+  email: string;
+  createdAt?: string;
+}
+
+export interface AuthResponse {
+  tokens: {
+    accessToken: string;
+  };
+  user: User;
+}
+
+export const apiService = {
+  async login(email: string, password: string): Promise<AuthResponse> {
+    const response = await axios.post<AuthResponse>(api.login, { email, password });
+    return response.data;
+  },
+
+  async register(email: string, password: string): Promise<AuthResponse> {
+    const response = await axios.post<AuthResponse>(api.register, { email, password });
+    return response.data;
+  },
 };
 
 export default api;

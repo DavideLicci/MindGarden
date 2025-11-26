@@ -29,7 +29,10 @@ router.post('/register', async (req, res) => {
     await dbStatements.createGarden(userId);
 
     const token = jwt.sign({ id: userId.toString(), email }, JWT_SECRET);
-    res.status(201).json({ token });
+    res.status(201).json({
+      tokens: { accessToken: token },
+      user: { id: userId, email }
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Internal server error' });

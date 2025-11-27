@@ -7,10 +7,6 @@
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
     }
   ],
   "routes": [
@@ -24,7 +20,7 @@
     }
   ],
   "functions": {
-    "pages/api/**/*.ts": {
+    "api/**/*.ts": {
       "runtime": "nodejs18.x"
     }
   }

@@ -1,8 +1,9 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   appDir: 'frontend/app',
-  experimental: {
-    appDir: true,
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
   },
 };
 

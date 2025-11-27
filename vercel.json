@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "root": "frontend",
   "builds": [
     {
       "src": "next.config.js",
@@ -7,7 +8,7 @@
     }
   ],
   "functions": {
-    "frontend/app/api/**/*.ts": {
+    "app/api/**/*.ts": {
       "runtime": "nodejs18"
     }
   }

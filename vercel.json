@@ -8,7 +8,7 @@
   ],
   "functions": {
     "pages/api/**/*.ts": {
-      "runtime": "@vercel/node"
+      "runtime": "now-nodejs18"
     }
   }
 }

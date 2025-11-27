@@ -96,8 +96,6 @@ jobs:
 - Creare migrazione SQL iniziale (`MIGRATION`) basata sullo schema DB definito.
 - Disegnare wireframes bassa fedeltà (`WIREFRAMES`) per Check-in, Garden View, AR e AI Coach.
 
-Se vuoi che proceda con uno di questi task, rispondi con `STUB`, `MIGRATION` o `WIREFRAMES`.
-
 ---
 File creati finora:
 - `openapi/mindgarden.yaml`

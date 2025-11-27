@@ -8,7 +8,9 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "next build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "deploy": "vercel --prod",
+    "preview": "vercel"
   },
   "keywords": [
     "mindfulness",
@@ -29,7 +31,8 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "concurrently": "^8.2.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vercel": "^32.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

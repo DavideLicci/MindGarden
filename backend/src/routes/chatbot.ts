@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { dbStatements } from '../services/database.service.sqlite';
-import { generateChatbotResponse, ChatMessage } from '../services/ml.service';
+import { generateChatbotResponse } from '../services/ml.service';
 
 const router = Router();
 

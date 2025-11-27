@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
+    "build": "next build",
     "start": "cd backend && npm start",
     "deploy": "vercel --prod",
     "preview": "vercel"
@@ -22,8 +22,16 @@
   ],
   "author": "MindGarden Team",
   "license": "MIT",
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "concurrently": "^8.2.0",
+    "typescript": "^5.0.0",
     "vercel": "^32.0.0"
   },
   "engines": {

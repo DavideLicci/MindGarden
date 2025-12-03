@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService, User } from '../../core/api';
 
@@ -29,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token) {
       // TODO: Validate token and get user info
       // For now, assume token is valid
-      setUser({ id: '1', email: 'user@example.com', createdAt: new Date().toISOString() });
+      setUser({ id: 1, email: 'user@example.com', createdAt: new Date().toISOString() });
     }
     setIsLoading(false);
   }, []);

@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { apiService } from '../../core/api';
-import { Calendar, Clock, TrendingUp, Zap } from 'lucide-react';
+import { api } from '../../core/api';
+import { Calendar, TrendingUp, Zap } from 'lucide-react';
 
 interface HeatmapData {
   day: string;
@@ -46,8 +48,12 @@ const EmotionHeatmap: React.FC<EmotionHeatmapProps> = ({ dateRange }) => {
       }
       params.append('viewMode', viewMode);
 
-      const response = await apiService.get(`/analytics/heatmap?${params}`);
-      setData(response.data);
+      const response = await fetch(`${api.analytics}/heatmap?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch heatmap data');
+      }
+      const data = await response.json();
+      setData(data);
     } catch (err) {
       console.error('Failed to load heatmap data:', err);
       setError('Unable to load heatmap data');
@@ -73,7 +79,15 @@ const EmotionHeatmap: React.FC<EmotionHeatmapProps> = ({ dateRange }) => {
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Prepare data based on view mode
-    let processedData: any[];
+    interface ProcessedDataItem {
+      x: number;
+      y: number;
+      value: number;
+      count: number;
+      emotions: Record<string, number>;
+    }
+
+    let processedData: Record<string, ProcessedDataItem>;
     let xLabels: string[];
     let yLabels: string[];
 
@@ -99,7 +113,7 @@ const EmotionHeatmap: React.FC<EmotionHeatmapProps> = ({ dateRange }) => {
         acc[key].count += item.count;
         acc[key].emotions[item.emotion] = (acc[key].emotions[item.emotion] || 0) + item.count;
         return acc;
-      }, {});
+      }, {} as Record<string, ProcessedDataItem>);
     } else {
       // Group by week and day of month
       const weeks = Array.from({ length: 5 }, (_, i) => `Week ${i + 1}`);
@@ -125,7 +139,7 @@ const EmotionHeatmap: React.FC<EmotionHeatmapProps> = ({ dateRange }) => {
         acc[key].count += item.count;
         acc[key].emotions[item.emotion] = (acc[key].emotions[item.emotion] || 0) + item.count;
         return acc;
-      }, {});
+      }, {} as Record<string, ProcessedDataItem>);
     }
 
     const values = Object.values(processedData).map((d: any) => d.value / d.count);

@@ -1,5 +1,7 @@
 const nextConfig = {
-  appDir: 'frontend/app',
+  experimental: {
+    swc: false,
+  },
 };
 
 module.exports = nextConfig;

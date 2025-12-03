@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
 
 export const api = {
   // Auth endpoints
@@ -47,6 +47,35 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface Garden {
+  gardenId: string;
+  userId: string;
+  createdAt: string;
+  plants: PlantInstance[];
+  aggregate?: any;
+}
+
+export interface PlantInstance {
+  id: string;
+  userId: string;
+  checkinId: string;
+  archetype: string;
+  params?: any;
+  position: { x: number; y: number; z: number };
+  styleSkin?: string;
+  health: number;
+  growthProgress: number;
+  createdAt: string;
+}
+
+export interface CheckInData {
+  userId: string;
+  text?: string;
+  emotionHint?: string;
+  intensity: number;
+  tags: string[];
+}
+
 export const apiService = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const response = await axios.post<AuthResponse>(api.login, { email, password });
@@ -55,6 +84,30 @@ export const apiService = {
 
   async register(email: string, password: string): Promise<AuthResponse> {
     const response = await axios.post<AuthResponse>(api.register, { email, password });
+    return response.data;
+  },
+
+  async getGarden(): Promise<Garden> {
+    const token = localStorage.getItem('token');
+    const response = await axios.get<Garden>(api.gardens, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  },
+
+  async performPlantAction(plantId: string, actionData: any): Promise<any> {
+    const token = localStorage.getItem('token');
+    const response = await axios.post(`${api.plants}/${plantId}/action`, actionData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  },
+
+  async createCheckIn(checkInData: CheckInData): Promise<any> {
+    const token = localStorage.getItem('token');
+    const response = await axios.post(api.checkins, checkInData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     return response.data;
   },
 };

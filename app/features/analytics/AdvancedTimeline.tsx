@@ -1,7 +1,8 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { apiService } from '../../core/api';
-import { Calendar, TrendingUp, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 interface TimelineEvent {
   id: string;
@@ -47,8 +48,9 @@ const AdvancedTimeline: React.FC<AdvancedTimelineProps> = ({ dateRange }) => {
         params.append('endDate', dateRange.end);
       }
 
-      const response = await apiService.get(`/analytics/timeline?${params}`);
-      setEvents(response.data);
+      const response = await fetch(`/api/analytics/timeline?${params}`);
+      const data = await response.json();
+      setEvents(data);
     } catch (err) {
       console.error('Failed to load timeline data:', err);
       setError('Unable to load timeline data');
@@ -96,8 +98,7 @@ const AdvancedTimeline: React.FC<AdvancedTimelineProps> = ({ dateRange }) => {
     svg.append('g')
       .attr('transform', `translate(0, ${height})`)
       .call(d3.axisBottom(xScale)
-        .ticks(d3.timeDay.every(7))
-        .tickFormat(d3.timeFormat('%b %d')))
+        .ticks(d3.timeDay.every(7)!))
       .selectAll('text')
       .style('text-anchor', 'middle');
 
@@ -106,13 +107,14 @@ const AdvancedTimeline: React.FC<AdvancedTimelineProps> = ({ dateRange }) => {
       .call(d3.axisLeft(yScale))
       .selectAll('text')
       .style('text-anchor', 'end')
-      .text(d => {
-        switch (d) {
+      .text(function(d) {
+        const datum = d as string;
+        switch (datum) {
           case 'checkin': return 'Check-ins';
           case 'milestone': return 'Milestones';
           case 'alert': return 'Alerts';
           case 'improvement': return 'Improvements';
-          default: return d;
+          default: return datum;
         }
       });
 
@@ -141,12 +143,12 @@ const AdvancedTimeline: React.FC<AdvancedTimelineProps> = ({ dateRange }) => {
       .attr('stroke-dasharray', '5,5');
 
     // Draw events
-    parsedEvents.forEach((event, index) => {
+    parsedEvents.forEach((event) => {
       const x = xScale(event.parsedDate);
       const y = yScale(event.type)! + yScale.bandwidth() / 2;
 
       // Event circle
-      const circle = svg.append('circle')
+      svg.append('circle')
         .attr('cx', x)
         .attr('cy', y)
         .attr('r', getEventRadius(event))
